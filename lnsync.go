@@ -91,6 +91,10 @@ func main() {
 	chanWatcheQuit := make(chan bool)
 	chanUpdate := make(chan UpdateHeader)
 	dirs := strings.Split(*source, ",")
+	if len(dirs) == 0 || len(*distanation) == 0 {
+		flag.PrintDefaults()
+		os.Exit(1)
+	}
 	manageDirs := make([]Directory, 0)
 	for idx, dir := range dirs {
 		manageDirs = append(manageDirs, Directory{Path: dir,
