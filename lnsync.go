@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"github.com/howeyc/fsnotify"
-	daemon "github.com/sevlyar/go-daemon"
 	"io/ioutil"
 	"log"
 	"os"
@@ -11,6 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"github.com/howeyc/fsnotify"
+	daemon "github.com/sevlyar/go-daemon"
 )
 
 var source = flag.String("s", "", "Source path")
@@ -150,7 +151,9 @@ func cleanDirs(sources []Directory, target string) (err error) {
 	if err != nil {
 		return err
 	}
+	target_files := make(map[string]string)
 	for _, f := range files {
+		target_files[f.Name()] = target
 		info, err := os.Lstat(target + "/" + f.Name())
 		if err != nil {
 			return err
@@ -164,6 +167,24 @@ func cleanDirs(sources []Directory, target string) (err error) {
 					return err
 				}
 			}
+		} else {
+			log.Println("Unresolved file: " + target + "/" + f.Name() + ". Deleted")
+			err := os.Remove(target + "/" + f.Name())
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	for key, path := range filenames {
+		if _, ok := target_files[key]; !ok {
+			log.Println("Found non-exists link: " + path + "/" + key + ". Adding")
+			err := os.Symlink(path+"/"+key, target+"/"+key)
+			if err != nil {
+				log.Println(err.Error())
+				return err
+			}
+			log.Println("Updated link: " + target + "/" + key)
 		}
 	}
 
